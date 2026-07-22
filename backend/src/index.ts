@@ -229,6 +229,9 @@ app.post('/leads/bulk', async (req: Request, res: Response) => {
             jobTitle: lead.jobTitle ? lead.jobTitle.trim() : null,
             countryCode: lead.countryCode ? lead.countryCode.trim() : null,
             companyName: lead.companyName ? lead.companyName.trim() : null,
+            phoneNumber: lead.phoneNumber ? String(lead.phoneNumber).trim() : null,
+            yearsAtCompany: lead.yearsAtCompany ? Math.trunc(Number(lead.yearsAtCompany)) : null,
+            linkedinUrl: lead.linkedinUrl ? String(lead.linkedinUrl).trim() : null,
           },
         })
         importedCount++

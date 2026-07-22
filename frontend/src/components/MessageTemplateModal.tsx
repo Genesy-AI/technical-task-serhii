@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { api } from '../api'
+import { LEAD_TEMPLATE_FIELDS } from '../constants/leadFields'
 
 interface MessageTemplateModalProps {
   isOpen: boolean
@@ -24,6 +25,10 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
     errors: Array<{ leadId: number; leadName: string; error: string }>
   } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isFieldDropdownOpen, setIsFieldDropdownOpen] = useState(false)
+  const [fieldSearch, setFieldSearch] = useState('')
+  const fieldDropdownRef = useRef<HTMLDivElement>(null)
+  const fieldSearchRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
   const generateMessagesMutation = useMutation({
@@ -106,7 +111,29 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
     }
   }, [isOpen, handleClose])
 
-  const availableFields = ['firstName', 'lastName', 'email', 'jobTitle', 'companyName', 'countryCode']
+  useEffect(() => {
+    if (!isFieldDropdownOpen) return
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (fieldDropdownRef.current && !fieldDropdownRef.current.contains(e.target as Node)) {
+        setIsFieldDropdownOpen(false)
+        setFieldSearch('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    fieldSearchRef.current?.focus()
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [isFieldDropdownOpen])
+
+  const filteredFields = LEAD_TEMPLATE_FIELDS.filter((field) => {
+    const query = fieldSearch.trim().toLowerCase()
+    if (!query) return true
+    return field.label.toLowerCase().includes(query) || field.key.toLowerCase().includes(query)
+  })
 
   const insertField = (field: string) => {
     if (textareaRef.current) {
@@ -156,18 +183,65 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
                 Message Template
               </label>
               <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-gray-600">Insert field:</span>
-                  {availableFields.map((field) => (
-                    <button
-                      key={field}
-                      type="button"
-                      onClick={() => insertField(field)}
-                      className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                    >
-                      {`{${field}}`}
-                    </button>
-                  ))}
+                <div className="relative" ref={fieldDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFieldDropdownOpen((open) => !open)
+                      setFieldSearch('')
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Insert field
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isFieldDropdownOpen && (
+                    <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                      <div className="p-2 border-b border-gray-100">
+                        <input
+                          ref={fieldSearchRef}
+                          type="text"
+                          value={fieldSearch}
+                          onChange={(e) => setFieldSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              e.stopPropagation()
+                              setIsFieldDropdownOpen(false)
+                              setFieldSearch('')
+                            }
+                          }}
+                          placeholder="Search fields..."
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <ul className="max-h-56 overflow-y-auto py-1">
+                        {filteredFields.length === 0 && (
+                          <li className="px-3 py-2 text-sm text-gray-500">No fields found</li>
+                        )}
+                        {filteredFields.map((field) => (
+                          <li key={field.key}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                insertField(field.key)
+                                setIsFieldDropdownOpen(false)
+                                setFieldSearch('')
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <span>{field.label}</span>
+                              <span className="text-xs text-gray-400">{`{${field.key}}`}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <textarea
                   ref={textareaRef}

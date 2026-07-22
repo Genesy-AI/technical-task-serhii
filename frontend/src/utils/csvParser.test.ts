@@ -51,8 +51,8 @@ John Doe john@example.com`
   })
 
   it('should parse valid CSV with all required fields', () => {
-    const csv = `firstName,lastName,email,jobTitle,countryCode,companyName
-John,Doe,john.doe@example.com,Developer,US,Tech Corp`
+    const csv = `firstName,lastName,email,jobTitle,countryCode,companyName,phoneNumber,yearsAtCompany,linkedinUrl
+John,Doe,john.doe@example.com,Developer,US,Tech Corp,+1 555 123 4567,5,https://linkedin.com/in/johndoe`
 
     const result = parseCsv(csv)
 
@@ -64,10 +64,36 @@ John,Doe,john.doe@example.com,Developer,US,Tech Corp`
       jobTitle: 'Developer',
       countryCode: 'US',
       companyName: 'Tech Corp',
+      phoneNumber: '+1 555 123 4567',
+      yearsAtCompany: 5,
+      linkedinUrl: 'https://linkedin.com/in/johndoe',
       isValid: true,
       errors: [],
       rowIndex: 2,
     })
+  })
+
+  it('should map header aliases for the new fields', () => {
+    const csv = `firstName,lastName,email,phone,yearsInRole,linkedin
+John,Doe,john@example.com,555-1234,3,https://linkedin.com/in/jd`
+
+    const result = parseCsv(csv)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].phoneNumber).toBe('555-1234')
+    expect(result[0].yearsAtCompany).toBe(3)
+    expect(result[0].linkedinUrl).toBe('https://linkedin.com/in/jd')
+  })
+
+  it('should leave non-numeric yearsAtCompany unset without invalidating the row', () => {
+    const csv = `firstName,lastName,email,yearsAtCompany
+John,Doe,john@example.com,abc`
+
+    const result = parseCsv(csv)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].yearsAtCompany).toBeUndefined()
+    expect(result[0].isValid).toBe(true)
   })
 
   it('should handle missing required fields and mark as invalid', () => {
@@ -143,14 +169,17 @@ John,Doe,john@example.com,Developer,US,Tech Corp`
   })
 
   it('should handle missing optional fields', () => {
-    const csv = `firstName,lastName,email,jobTitle,countryCode
-John,Doe,john@example.com,,`
+    const csv = `firstName,lastName,email,jobTitle,countryCode,phoneNumber,yearsAtCompany,linkedinUrl
+John,Doe,john@example.com,,,,,`
 
     const result = parseCsv(csv)
 
     expect(result).toHaveLength(1)
     expect(result[0].jobTitle).toBeUndefined()
     expect(result[0].countryCode).toBeUndefined()
+    expect(result[0].phoneNumber).toBeUndefined()
+    expect(result[0].yearsAtCompany).toBeUndefined()
+    expect(result[0].linkedinUrl).toBeUndefined()
     expect(result[0].isValid).toBe(true)
   })
 
