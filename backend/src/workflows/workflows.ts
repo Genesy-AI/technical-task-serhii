@@ -3,7 +3,8 @@ import type { RetryPolicy } from '@temporalio/common'
 import type * as activities from './activities'
 
 const { verifyEmail } = proxyActivities<typeof activities>({
-  startToCloseTimeout: '1 second',
+  startToCloseTimeout: '30 seconds',
+  retry: { maximumAttempts: 3 },
 })
 
 export async function verifyEmailWorkflow(email: string): Promise<boolean> {
