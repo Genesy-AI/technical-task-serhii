@@ -16,6 +16,8 @@ export const LeadsList: FC = () => {
     queryKey: ['leads', 'getMany'],
     queryFn: async () => api.leads.getMany(),
     retry: false,
+    refetchInterval: (query) =>
+      query.state.data?.some((lead) => lead.phoneEnrichmentStatus === 'IN_PROGRESS') ? 2000 : false,
   })
   
 
@@ -48,6 +50,38 @@ export const LeadsList: FC = () => {
     },
     onError: () => {
       toast.error('Failed to verify emails. Please try again.')
+    }
+  })
+
+  const enrichPhoneMutation = useMutation({
+    mutationFn: async (ids: number[]) => api.leads.enrichPhone({ leadIds: ids }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
+      setIsEnrichDropdownOpen(false)
+      if (data.startedCount > 0) {
+        toast.success(
+          data.startedCount === 1
+            ? `Started phone enrichment for ${data.startedCount} lead`
+            : `Started phone enrichment for ${data.startedCount} leads`
+        )
+      }
+      if (data.alreadyRunning.length > 0) {
+        toast(
+          data.alreadyRunning.length === 1
+            ? `${data.alreadyRunning.length} lead is already being enriched`
+            : `${data.alreadyRunning.length} leads are already being enriched`
+        )
+      }
+      if (data.errors.length > 0) {
+        toast.error(
+          data.errors.length === 1
+            ? `Failed to start enrichment for ${data.errors.length} lead`
+            : `Failed to start enrichment for ${data.errors.length} leads`
+        )
+      }
+    },
+    onError: () => {
+      toast.error('Failed to start phone enrichment. Please try again.')
     }
   })
 
@@ -156,6 +190,18 @@ export const LeadsList: FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0a8 8 0 11-16 0 8 8 0 0116 0zm-8 0V4" />
                         </svg>
                         Verify Email
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => enrichPhoneMutation.mutate(selectedLeads)}
+                      disabled={enrichPhoneMutation.isPending}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-center">
+                        <svg className="mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        Enrich Phone
                       </div>
                     </button>
                     <button
@@ -285,7 +331,25 @@ export const LeadsList: FC = () => {
                     <div className="text-sm text-gray-900">{lead.countryCode || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{lead.phoneNumber || '-'}</div>
+                    <div className="text-sm text-gray-900">
+                      {lead.phoneEnrichmentStatus === 'IN_PROGRESS' ? (
+                        <span className="flex items-center text-gray-500">
+                          <svg className="animate-spin mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Enriching…
+                        </span>
+                      ) : lead.phoneNumber ? (
+                        lead.phoneNumber
+                      ) : lead.phoneEnrichmentStatus === 'NO_DATA' ? (
+                        <span className="text-gray-400">No data found</span>
+                      ) : lead.phoneEnrichmentStatus === 'FAILED' ? (
+                        <span className="text-red-500">Failed</span>
+                      ) : (
+                        '-'
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{lead.yearsAtCompany ?? '-'}</div>
