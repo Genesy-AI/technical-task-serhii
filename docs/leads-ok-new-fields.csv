@@ -1,0 +1,8 @@
+firstName,lastName,email,jobTitle,countryCode,companyName,yearsAtCompany,phoneNumber,linkedinUrl
+Sarah,Connor,sarah.connor@cyberdyne.com,Operations Manager,US,Cyberdyne Systems,8,+1-555-014-2298,https://linkedin.com/in/sarahconnor
+Marcus,Lee,marcus.lee@brightpath.io,Product Designer,SG,BrightPath,3,+65 8123 4567,https://linkedin.com/in/marcuslee
+Anna,Kowalska,anna.kowalska@nordwind.pl,Sales Director,PL,Nordwind Group,12,+48 601 234 567,https://linkedin.com/in/annakowalska
+Diego,Fernandez,diego.fernandez@solartech.es,Software Engineer,ES,SolarTech,1,+34 612 345 678,https://linkedin.com/in/diegofernandez
+Priya,Sharma,priya.sharma@lotuslabs.in,Data Analyst,IN,Lotus Labs,5,+91 98765 43210,https://linkedin.com/in/priyasharma
+Tom,Becker,tom.becker@alpinesoft.de,Account Executive,DE,AlpineSoft,0,+49 151 2345678,
+Lucia,Moretti,lucia.moretti@velluto.it,Marketing Lead,IT,Velluto,7,,https://linkedin.com/in/luciamoretti
